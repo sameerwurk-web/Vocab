@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocab Builder</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#007aff">
+    <style>
+        :root {
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --primary: #007aff;
+            --text-color: #1c1c1e;
+            --subtext-color: #8e8e93;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        /* Tab Navigation */
+        .tab-bar {
+            display: flex;
+            background: #e5e5ea;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--subtext-color);
+        }
+
+        .tab.active {
+            background: var(--card-bg);
+            color: var(--text-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Form & List Styles */
+        .form-card, .vocab-card {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 16px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #d1d1d6;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background-color: #e5e5ea;
+            color: var(--text-color);
+        }
+
+        .vocab-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .vocab-word { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+        .vocab-def { font-size: 14px; color: var(--subtext-color); }
+
+        /* Flashcard Styles */
+        .flashcard {
+            background: var(--primary);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 12px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .flashcard.flipped {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 2px solid var(--primary);
+            box-shadow: none;
+        }
+
+        .flashcard .small-word {
+            font-size: 14px;
+            color: var(--subtext-color);
+            margin-bottom: 12px;
+            font-weight: normal;
+        }
+
+        .quiz-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .quiz-progress {
+            text-align: center;
+            font-size: 14px;
+            color: var(--subtext-color);
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vocab Builder</h1>
+
+        <!-- Navigation Tabs -->
+        <div class="tab-bar">
+            <div id="tab-list" class="tab active" onclick="switchTab('list')">Add / List</div>
+            <div id="tab-quiz" class="tab" onclick="switchTab('quiz')">Flashcards</div>
+        </div>
+        
+        <!-- View 1: Word List & Adding -->
+        <div id="view-list">
+            <div class="form-card">
+                <input type="text" id="wordInput" placeholder="New Word">
+                <input type="text" id="defInput" placeholder="Definition">
+                <button onclick="addWord()">Add to Vocabulary</button>
+            </div>
+            <div class="vocab-list" id="vocabList"></div>
+        </div>
+
+        <!-- View 2: Flashcard Quiz -->
+        <div id="view-quiz" class="hidden">
+            <div id="flashcard" class="flashcard" onclick="flipCard()">
+                <!-- Flashcard content injected via JS -->
+            </div>
+            <div class="quiz-controls">
+                <button class="secondary" onclick="prevCard()" style="flex: 1;">&larr; Prev</button>
+                <div id="quiz-progress" class="quiz-progress"></div>
+                <button onclick="nextCard()" style="flex: 1;">Next &rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let vocabList = JSON.parse(localStorage.getItem('vocabList')) || [];
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        // --- Core Functions ---
+        function addWord() {
+            const word = document.getElementById('wordInput').value.trim();
+            const def = document.getElementById('defInput').value.trim();
+
+            if (!word || !def) return;
+
+            vocabList.push({ word, def });
+            localStorage.setItem('vocabList', JSON.stringify(vocabList));
+
+            document.getElementById('wordInput').value = '';
+            document.getElementById('defInput').value = '';
+            renderList();
+        }
+
+        function renderList() {
+            const listEl = document.getElementById('vocabList');
+            listEl.innerHTML = '';
+            vocabList.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'vocab-card';
+                card.innerHTML = `
+                    <div class="vocab-word">${escapeHtml(item.word)}</div>
+                    <div class="vocab-def">${escapeHtml(item.def)}</div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        // --- Flashcard Quiz Functions ---
+        function switchTab(tab) {
+            document.getElementById('tab-list').classList.toggle('active', tab === 'list');
+            document.getElementById('tab-quiz').classList.toggle('active', tab === 'quiz');
+
+            document.getElementById('view-list').classList.toggle('hidden', tab === 'quiz');
+            document.getElementById('view-quiz').classList.toggle('hidden', tab === 'list');
+
+            if (tab === 'quiz') {
+                currentCardIndex = 0;
+                isFlipped = false;
+                renderQuiz();
+            }
+        }
+
+        function renderQuiz() {
+            const cardEl = document.getElementById('flashcard');
+            const progressEl = document.getElementById('quiz-progress');
+
+            if (vocabList.length === 0) {
+                cardEl.innerHTML = `<div style="font-size:20px; font-weight:normal;">Add some words first!</div>`;
+                cardEl.className = 'flashcard flipped';
+                progressEl.innerText = "0 / 0";
+                return;
+            }
+
+            const currentVocab = vocabList[currentCardIndex];
+            
+            if (isFlipped) {
+                cardEl.innerHTML = `
+                    <div class="small-word">${escapeHtml(currentVocab.word)} means:</div>
+                    <div style="font-size: 22px;">${escapeHtml(currentVocab.def)}</div>
+                `;
+                cardEl.className = 'flashcard flipped';
+            } else {
+                cardEl.innerHTML = escapeHtml(currentVocab.word);
+                cardEl.className = 'flashcard';
+            }
+
+            progressEl.innerText = `${currentCardIndex + 1} / ${vocabList.length}`;
+        }
+
+        function flipCard() {
+            if (vocabList.length === 0) return;
+            isFlipped = !isFlipped;
+            renderQuiz();
+        }
+
+        function nextCard() {
+            if (vocabList.length === 0) return;
+            currentCardIndex = (currentCardIndex + 1) % vocabList.length;
+            isFlipped = false;
+            renderQuiz();
+        }
+
+        function prevCard() {
+            if (vocabList.length === 0) return;
+            currentCardIndex = (currentCardIndex - 1 + vocabList.length) % vocabList.length;
+            isFlipped = false;
+            renderQuiz();
+        }
+
+        // --- Utilities ---
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        // Initial setup
+        renderList();
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>

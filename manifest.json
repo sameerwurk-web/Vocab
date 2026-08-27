@@ -1,0 +1,20 @@
+{
+  "name": "Vocab Builder",
+  "short_name": "Vocab",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#007aff",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/007aff/ffffff?text=Vocab",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512/007aff/ffffff?text=Vocab",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
