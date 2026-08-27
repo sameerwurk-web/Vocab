@@ -199,6 +199,36 @@
         let currentCardIndex = 0;
         let isFlipped = false;
 
+        // --- Starter Pack Injection ---
+        if (!localStorage.getItem('starterPackLoaded')) {
+            const starterWords = [
+                { word: "Sycophant", def: "A person who acts excessively obedient toward someone important to gain advantage." },
+                { word: "Obfuscate", def: "To render obscure, unclear, or unintelligible." },
+                { word: "Ephemeral", def: "Lasting for a very short time; fleeting." },
+                { word: "Cacophony", def: "A harsh, discordant mixture of sounds." },
+                { word: "Esoteric", def: "Intended for or understood by only a small, specialized number of people." },
+                { word: "Fastidious", def: "Very attentive to and concerned about accuracy and detail." },
+                { word: "Grandiloquent", def: "Pompous or extravagant in language, style, or manner." },
+                { word: "Iconoclast", def: "A person who attacks cherished beliefs or institutions." },
+                { word: "Juxtaposition", def: "The fact of two things being seen or placed close together with contrasting effect." },
+                { word: "Mellifluous", def: "Sweet or musical; pleasant to hear." },
+                { word: "Nefarious", def: "Wicked, villainous, or criminal." },
+                { word: "Pedantic", def: "Excessively concerned with minor details and rules." },
+                { word: "Quixotic", def: "Exceedingly idealistic; unrealistic and impractical." },
+                { word: "Recalcitrant", def: "Having an obstinately uncooperative attitude toward authority." },
+                { word: "Serendipity", def: "The occurrence of events by chance in a happy or beneficial way." },
+                { word: "Trepidation", def: "A feeling of fear or agitation about something that may happen." },
+                { word: "Ubiquitous", def: "Present, appearing, or found everywhere." },
+                { word: "Vacillate", def: "Alternate or waver between different opinions or actions; be indecisive." },
+                { word: "Capricious", def: "Given to sudden and unaccountable changes of mood or behavior." },
+                { word: "Zealous", def: "Showing great energy or enthusiasm in pursuit of a cause or objective." }
+            ];
+            
+            vocabList = [...vocabList, ...starterWords];
+            localStorage.setItem('vocabList', JSON.stringify(vocabList));
+            localStorage.setItem('starterPackLoaded', 'true');
+        }
+
         // --- Core Functions ---
         function addWord() {
             const word = document.getElementById('wordInput').value.trim();
