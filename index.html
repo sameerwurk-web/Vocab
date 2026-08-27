@@ -8,6 +8,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#007aff">
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <style>
         :root {
             --bg-color: #f2f2f7;
@@ -17,9 +20,9 @@
             --subtext-color: #8e8e93;
             --success: #34c759;
             --danger: #ff3b30;
+            --warning: #ff9500;
         }
 
-        /* Dark Mode Variables */
         body.dark-mode {
             --bg-color: #000000;
             --card-bg: #1c1c1e;
@@ -36,20 +39,11 @@
             display: flex;
             justify-content: center;
             transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
         }
 
-        .container {
-            width: 100%;
-            max-width: 500px;
-        }
-
-        .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
+        .container { width: 100%; max-width: 500px; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         h1 { font-size: 28px; margin: 0; }
 
         .icon-btn {
@@ -64,87 +58,38 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        /* Tab Navigation */
         .tab-bar {
             display: flex;
             background: var(--card-bg);
             padding: 4px;
             border-radius: 8px;
             margin-bottom: 20px;
-            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
         }
 
-        .tab {
-            flex: 1;
-            padding: 8px;
-            text-align: center;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            color: var(--subtext-color);
-        }
-
-        .tab.active {
-            background: var(--primary);
-            color: white;
-        }
-
+        .tab { flex: 1; padding: 8px; text-align: center; border-radius: 6px; font-weight: 600; cursor: pointer; color: var(--subtext-color); }
+        .tab.active { background: var(--primary); color: white; }
         .hidden { display: none !important; }
 
-        /* Form & List Styles */
-        .form-card, .vocab-card {
-            background: var(--card-bg);
-            padding: 16px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            margin-bottom: 16px;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            border: 1px solid #d1d1d6;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-            background: var(--card-bg);
-            color: var(--text-color);
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
+        .form-card, .vocab-card { background: var(--card-bg); padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #d1d1d6; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: var(--card-bg); color: var(--text-color); }
+        
+        button { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
         .btn-success { background-color: var(--success); }
         .btn-danger { background-color: var(--danger); }
+        .btn-warning { background-color: var(--warning); color: white; }
         .btn-secondary { background-color: var(--card-bg); color: var(--text-color); border: 1px solid #d1d1d6; }
 
         .vocab-list { display: flex; flex-direction: column; gap: 10px; }
-        
-        .vocab-word-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 4px;
-        }
-        
+        .vocab-word-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
         .vocab-word { font-size: 18px; font-weight: bold; }
-        .vocab-score { font-size: 12px; color: var(--primary); font-weight: bold; background: rgba(0,122,255,0.1); padding: 2px 8px; border-radius: 12px; }
+        .vocab-score { font-size: 12px; color: var(--text-color); font-weight: bold; background: rgba(142, 142, 147, 0.2); padding: 2px 8px; border-radius: 12px; }
         .vocab-def { font-size: 14px; color: var(--subtext-color); }
 
-        /* Flashcard Styles */
+        /* Flashcard Swipe Styles */
+        #card-container { position: relative; perspective: 1000px; }
+
         .flashcard {
             background: var(--primary);
             color: white;
@@ -158,36 +103,28 @@
             justify-content: center;
             font-size: 28px;
             font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             margin-bottom: 12px;
+            touch-action: pan-y;
+            transition: transform 0.2s ease-out, background 0.3s, border-color 0.3s;
+            user-select: none;
+            border: 2px solid transparent;
         }
 
         .flashcard.flipped {
-            background: var(--card-bg);
+            background: var(--card-bg) !important;
             color: var(--text-color);
-            border: 2px solid var(--primary);
             box-shadow: none;
         }
 
-        .flashcard .small-word {
-            font-size: 14px;
-            color: var(--subtext-color);
-            margin-bottom: 12px;
-            font-weight: normal;
-        }
-
-        .quiz-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            justify-content: space-between;
-        }
+        .flashcard .small-word { font-size: 14px; color: var(--subtext-color); margin-bottom: 12px; font-weight: normal; }
+        .quiz-controls { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+        
+        #speed-run-timer { font-size: 32px; font-weight: bold; text-align: center; color: var(--danger); margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header with Dark Mode Toggle -->
         <div class="header-row">
             <h1>Vocab Builder</h1>
             <button id="themeToggle" class="icon-btn" onclick="toggleTheme()">🌙</button>
@@ -198,7 +135,6 @@
             <div id="tab-quiz" class="tab" onclick="switchTab('quiz')">Study</div>
         </div>
         
-        <!-- View 1: Word List -->
         <div id="view-list">
             <div class="form-card">
                 <input type="text" id="wordInput" placeholder="New Word">
@@ -208,16 +144,23 @@
             <div class="vocab-list" id="vocabList"></div>
         </div>
 
-        <!-- View 2: Flashcard Quiz -->
         <div id="view-quiz" class="hidden">
-            <div id="flashcard" class="flashcard" onclick="flipCard()"></div>
             
-            <button class="btn-secondary" onclick="pronounceWord()" style="margin-bottom: 20px; padding: 10px;">🔊 Pronounce Aloud</button>
+            <div id="speed-run-timer" class="hidden">⏱️ 30s</div>
+
+            <div id="card-container">
+                <div id="flashcard" class="flashcard"></div>
+            </div>
+            
+            <div id="extra-actions" style="display: flex; gap: 8px; margin-bottom: 20px;">
+                <button class="btn-secondary" onclick="pronounceWord()" style="flex: 1; padding: 10px;">🔊 Pronounce</button>
+                <button class="btn-warning" onclick="startSpeedRun()" style="flex: 1; padding: 10px;">⏱️ Speed Run</button>
+            </div>
 
             <div class="quiz-controls">
-                <button class="btn-danger" onclick="scoreWord(-1)" style="flex: 1;">❌ Forgot</button>
+                <button class="btn-danger" onclick="scoreWord(-1)" style="flex: 1;">&larr; Forgot</button>
                 <button class="btn-secondary" onclick="shuffleCards()" style="flex: 0.5; font-size: 20px; padding: 12px;">🔀</button>
-                <button class="btn-success" onclick="scoreWord(1)" style="flex: 1;">✅ Knew It</button>
+                <button class="btn-success" onclick="scoreWord(1)" style="flex: 1;">Knew It &rarr;</button>
             </div>
             <div id="quiz-progress" style="text-align: center; margin-top: 16px; color: var(--subtext-color); font-size: 14px;"></div>
         </div>
@@ -227,40 +170,26 @@
         let vocabList = JSON.parse(localStorage.getItem('vocabList')) || [];
         let currentCardIndex = 0;
         let isFlipped = false;
+        
+        // Speed Run Variables
+        let speedRunInterval = null;
+        let isSpeedRunMode = false;
+        let speedRunScore = 0;
+        let timeLeft = 30;
 
-        // Apply saved theme on load
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-mode');
             document.getElementById('themeToggle').innerText = '☀️';
         }
 
-        // Add 'score' tracking to old words if it doesn't exist
         vocabList.forEach(w => { if(w.score === undefined) w.score = 0; });
 
-        // Starter Pack
-        if (!localStorage.getItem('starterPackLoaded')) {
-            const starterWords = [
-                { word: "Sycophant", def: "A person who acts excessively obedient toward someone important to gain advantage.", score: 0 },
-                { word: "Obfuscate", def: "To render obscure, unclear, or unintelligible.", score: 0 },
-                { word: "Ephemeral", def: "Lasting for a very short time; fleeting.", score: 0 },
-                { word: "Cacophony", def: "A harsh, discordant mixture of sounds.", score: 0 },
-                { word: "Esoteric", def: "Intended for or understood by only a small, specialized number of people.", score: 0 }
-            ];
-            vocabList = [...vocabList, ...starterWords];
-            saveData();
-            localStorage.setItem('starterPackLoaded', 'true');
-        }
-
-        // --- Core Functions ---
-        function saveData() {
-            localStorage.setItem('vocabList', JSON.stringify(vocabList));
-        }
+        function saveData() { localStorage.setItem('vocabList', JSON.stringify(vocabList)); }
 
         function toggleTheme() {
             const body = document.body;
             const btn = document.getElementById('themeToggle');
             body.classList.toggle('dark-mode');
-            
             if (body.classList.contains('dark-mode')) {
                 localStorage.setItem('theme', 'dark');
                 btn.innerText = '☀️';
@@ -274,28 +203,32 @@
             const word = document.getElementById('wordInput').value.trim();
             const def = document.getElementById('defInput').value.trim();
             if (!word || !def) return;
-
             vocabList.push({ word, def, score: 0 });
             saveData();
-
             document.getElementById('wordInput').value = '';
             document.getElementById('defInput').value = '';
             renderList();
         }
 
+        // --- Heatmap Logic ---
+        function getCardColor(score) {
+            if (score < 0) return '#ff3b30'; // Red (Struggling)
+            if (score >= 0 && score <= 2) return '#007aff'; // Blue (Learning)
+            if (score >= 3 && score <= 4) return '#af52de'; // Purple (Comfortable)
+            return '#e6b800'; // Gold (Mastered 5+)
+        }
+
         function renderList() {
             const listEl = document.getElementById('vocabList');
             listEl.innerHTML = '';
-            // Sort list by weakest words first
             const sortedList = [...vocabList].sort((a, b) => a.score - b.score);
-            
             sortedList.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'vocab-card';
                 card.innerHTML = `
                     <div class="vocab-word-row">
                         <span class="vocab-word">${escapeHtml(item.word)}</span>
-                        <span class="vocab-score">Mastery: ${item.score}</span>
+                        <span class="vocab-score" style="color: ${getCardColor(item.score)};">Mastery: ${item.score}</span>
                     </div>
                     <div class="vocab-def">${escapeHtml(item.def)}</div>
                 `;
@@ -303,16 +236,12 @@
             });
         }
 
-        // --- New Features (Study Mode) ---
         function pronounceWord() {
             if (vocabList.length === 0) return;
-            const currentWord = vocabList[currentCardIndex].word;
-            const utterance = new SpeechSynthesisUtterance(currentWord);
-            speechSynthesis.speak(utterance);
+            speechSynthesis.speak(new SpeechSynthesisUtterance(vocabList[currentCardIndex].word));
         }
 
         function shuffleCards() {
-            // Fisher-Yates shuffle to mix the deck
             for (let i = vocabList.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [vocabList[i], vocabList[j]] = [vocabList[j], vocabList[i]];
@@ -323,78 +252,49 @@
             renderQuiz();
         }
 
-        function scoreWord(points) {
-            if (vocabList.length === 0) return;
-            // Add or subtract from the mastery score
-            vocabList[currentCardIndex].score += points;
-            saveData();
-            
-            // Move to next card
-            currentCardIndex = (currentCardIndex + 1) % vocabList.length;
-            isFlipped = false;
-            renderQuiz();
-            renderList(); // Update scores on the list tab
-        }
-
-        // --- Navigation ---
-        function switchTab(tab) {
-            document.getElementById('tab-list').classList.toggle('active', tab === 'list');
-            document.getElementById('tab-quiz').classList.toggle('active', tab === 'quiz');
-            document.getElementById('view-list').classList.toggle('hidden', tab === 'quiz');
-            document.getElementById('view-quiz').classList.toggle('hidden', tab === 'list');
-
-            if (tab === 'quiz') {
-                // Before starting quiz, sort array so weakest words (lowest score) appear first
-                vocabList.sort((a, b) => a.score - b.score);
-                currentCardIndex = 0;
-                isFlipped = false;
-                renderQuiz();
-            } else {
-                renderList();
-            }
-        }
-
-        function renderQuiz() {
-            const cardEl = document.getElementById('flashcard');
-            const progressEl = document.getElementById('quiz-progress');
-
+        // --- Speed Run Logic ---
+        function startSpeedRun() {
             if (vocabList.length === 0) {
-                cardEl.innerHTML = `<div style="font-size:20px; font-weight:normal;">Add some words first!</div>`;
-                cardEl.className = 'flashcard flipped';
-                progressEl.innerText = "";
+                alert("Add some words first!");
                 return;
             }
-
-            const currentVocab = vocabList[currentCardIndex];
+            isSpeedRunMode = true;
+            timeLeft = 30;
+            speedRunScore = 0;
+            document.getElementById('speed-run-timer').classList.remove('hidden');
+            document.getElementById('speed-run-timer').innerText = `⏱️ ${timeLeft}s`;
+            document.getElementById('extra-actions').classList.add('hidden');
             
-            if (isFlipped) {
-                cardEl.innerHTML = `
-                    <div class="small-word">${escapeHtml(currentVocab.word)} means:</div>
-                    <div style="font-size: 22px;">${escapeHtml(currentVocab.def)}</div>
-                `;
-                cardEl.className = 'flashcard flipped';
-            } else {
-                cardEl.innerHTML = escapeHtml(currentVocab.word);
-                cardEl.className = 'flashcard';
-            }
-
-            progressEl.innerText = `Card ${currentCardIndex + 1} of ${vocabList.length} • Current Mastery Score: ${currentVocab.score}`;
+            shuffleCards();
+            
+            speedRunInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('speed-run-timer').innerText = `⏱️ ${timeLeft}s`;
+                if (timeLeft <= 0) endSpeedRun();
+            }, 1000);
         }
 
-        function flipCard() {
+        function endSpeedRun() {
+            clearInterval(speedRunInterval);
+            isSpeedRunMode = false;
+            document.getElementById('speed-run-timer').classList.add('hidden');
+            document.getElementById('extra-actions').classList.remove('hidden');
+            
+            // Confetti for completing a run!
+            confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
+            
+            // Short delay so the alert doesn't block the confetti instantly
+            setTimeout(() => {
+                alert(`Time's up! Speed Run Score: ${speedRunScore} correct swipes!`);
+                renderQuiz();
+            }, 500);
+        }
+
+        function scoreWord(points) {
             if (vocabList.length === 0) return;
-            isFlipped = !isFlipped;
-            renderQuiz();
-        }
-
-        function escapeHtml(text) {
-            return text.replace(/[&<>"']/g, function(m) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
-            });
-        }
-
-        renderList();
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-    </script>
-</body>
-</html>
+            
+            // Core scoring
+            vocabList[currentCardIndex].score += points;
+            
+            // Speed run scoring
+            if (isSpeed
