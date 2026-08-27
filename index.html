@@ -15,6 +15,16 @@
             --primary: #007aff;
             --text-color: #1c1c1e;
             --subtext-color: #8e8e93;
+            --success: #34c759;
+            --danger: #ff3b30;
+        }
+
+        /* Dark Mode Variables */
+        body.dark-mode {
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
+            --text-color: #ffffff;
+            --subtext-color: #98989d;
         }
 
         body {
@@ -25,6 +35,7 @@
             padding: 20px;
             display: flex;
             justify-content: center;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .container {
@@ -32,19 +43,38 @@
             max-width: 500px;
         }
 
-        h1 {
-            font-size: 28px;
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 16px;
-            text-align: center;
+        }
+
+        h1 { font-size: 28px; margin: 0; }
+
+        .icon-btn {
+            background: var(--card-bg);
+            border: 1px solid #d1d1d6;
+            color: var(--text-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         /* Tab Navigation */
         .tab-bar {
             display: flex;
-            background: #e5e5ea;
+            background: var(--card-bg);
             padding: 4px;
             border-radius: 8px;
             margin-bottom: 20px;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
         }
 
         .tab {
@@ -58,14 +88,11 @@
         }
 
         .tab.active {
-            background: var(--card-bg);
-            color: var(--text-color);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            background: var(--primary);
+            color: white;
         }
 
-        .hidden {
-            display: none !important;
-        }
+        .hidden { display: none !important; }
 
         /* Form & List Styles */
         .form-card, .vocab-card {
@@ -84,6 +111,8 @@
             border-radius: 8px;
             font-size: 16px;
             box-sizing: border-box;
+            background: var(--card-bg);
+            color: var(--text-color);
         }
 
         button {
@@ -98,18 +127,21 @@
             cursor: pointer;
         }
 
-        button.secondary {
-            background-color: #e5e5ea;
-            color: var(--text-color);
-        }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-secondary { background-color: var(--card-bg); color: var(--text-color); border: 1px solid #d1d1d6; }
 
-        .vocab-list {
+        .vocab-list { display: flex; flex-direction: column; gap: 10px; }
+        
+        .vocab-word-row {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
         }
-
-        .vocab-word { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+        
+        .vocab-word { font-size: 18px; font-weight: bold; }
+        .vocab-score { font-size: 12px; color: var(--primary); font-weight: bold; background: rgba(0,122,255,0.1); padding: 2px 8px; border-radius: 12px; }
         .vocab-def { font-size: 14px; color: var(--subtext-color); }
 
         /* Flashcard Styles */
@@ -128,8 +160,7 @@
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,122,255,0.3);
-            margin-bottom: 20px;
-            transition: all 0.2s ease;
+            margin-bottom: 12px;
         }
 
         .flashcard.flipped {
@@ -148,30 +179,26 @@
 
         .quiz-controls {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
             justify-content: space-between;
-        }
-
-        .quiz-progress {
-            text-align: center;
-            font-size: 14px;
-            color: var(--subtext-color);
-            flex: 1;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Vocab Builder</h1>
+        <!-- Header with Dark Mode Toggle -->
+        <div class="header-row">
+            <h1>Vocab Builder</h1>
+            <button id="themeToggle" class="icon-btn" onclick="toggleTheme()">🌙</button>
+        </div>
 
-        <!-- Navigation Tabs -->
         <div class="tab-bar">
-            <div id="tab-list" class="tab active" onclick="switchTab('list')">Add / List</div>
-            <div id="tab-quiz" class="tab" onclick="switchTab('quiz')">Flashcards</div>
+            <div id="tab-list" class="tab active" onclick="switchTab('list')">List</div>
+            <div id="tab-quiz" class="tab" onclick="switchTab('quiz')">Study</div>
         </div>
         
-        <!-- View 1: Word List & Adding -->
+        <!-- View 1: Word List -->
         <div id="view-list">
             <div class="form-card">
                 <input type="text" id="wordInput" placeholder="New Word">
@@ -183,14 +210,16 @@
 
         <!-- View 2: Flashcard Quiz -->
         <div id="view-quiz" class="hidden">
-            <div id="flashcard" class="flashcard" onclick="flipCard()">
-                <!-- Flashcard content injected via JS -->
-            </div>
+            <div id="flashcard" class="flashcard" onclick="flipCard()"></div>
+            
+            <button class="btn-secondary" onclick="pronounceWord()" style="margin-bottom: 20px; padding: 10px;">🔊 Pronounce Aloud</button>
+
             <div class="quiz-controls">
-                <button class="secondary" onclick="prevCard()" style="flex: 1;">&larr; Prev</button>
-                <div id="quiz-progress" class="quiz-progress"></div>
-                <button onclick="nextCard()" style="flex: 1;">Next &rarr;</button>
+                <button class="btn-danger" onclick="scoreWord(-1)" style="flex: 1;">❌ Forgot</button>
+                <button class="btn-secondary" onclick="shuffleCards()" style="flex: 0.5; font-size: 20px; padding: 12px;">🔀</button>
+                <button class="btn-success" onclick="scoreWord(1)" style="flex: 1;">✅ Knew It</button>
             </div>
+            <div id="quiz-progress" style="text-align: center; margin-top: 16px; color: var(--subtext-color); font-size: 14px;"></div>
         </div>
     </div>
 
@@ -199,45 +228,55 @@
         let currentCardIndex = 0;
         let isFlipped = false;
 
-        // --- Starter Pack Injection ---
+        // Apply saved theme on load
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('themeToggle').innerText = '☀️';
+        }
+
+        // Add 'score' tracking to old words if it doesn't exist
+        vocabList.forEach(w => { if(w.score === undefined) w.score = 0; });
+
+        // Starter Pack
         if (!localStorage.getItem('starterPackLoaded')) {
             const starterWords = [
-                { word: "Sycophant", def: "A person who acts excessively obedient toward someone important to gain advantage." },
-                { word: "Obfuscate", def: "To render obscure, unclear, or unintelligible." },
-                { word: "Ephemeral", def: "Lasting for a very short time; fleeting." },
-                { word: "Cacophony", def: "A harsh, discordant mixture of sounds." },
-                { word: "Esoteric", def: "Intended for or understood by only a small, specialized number of people." },
-                { word: "Fastidious", def: "Very attentive to and concerned about accuracy and detail." },
-                { word: "Grandiloquent", def: "Pompous or extravagant in language, style, or manner." },
-                { word: "Iconoclast", def: "A person who attacks cherished beliefs or institutions." },
-                { word: "Juxtaposition", def: "The fact of two things being seen or placed close together with contrasting effect." },
-                { word: "Mellifluous", def: "Sweet or musical; pleasant to hear." },
-                { word: "Nefarious", def: "Wicked, villainous, or criminal." },
-                { word: "Pedantic", def: "Excessively concerned with minor details and rules." },
-                { word: "Quixotic", def: "Exceedingly idealistic; unrealistic and impractical." },
-                { word: "Recalcitrant", def: "Having an obstinately uncooperative attitude toward authority." },
-                { word: "Serendipity", def: "The occurrence of events by chance in a happy or beneficial way." },
-                { word: "Trepidation", def: "A feeling of fear or agitation about something that may happen." },
-                { word: "Ubiquitous", def: "Present, appearing, or found everywhere." },
-                { word: "Vacillate", def: "Alternate or waver between different opinions or actions; be indecisive." },
-                { word: "Capricious", def: "Given to sudden and unaccountable changes of mood or behavior." },
-                { word: "Zealous", def: "Showing great energy or enthusiasm in pursuit of a cause or objective." }
+                { word: "Sycophant", def: "A person who acts excessively obedient toward someone important to gain advantage.", score: 0 },
+                { word: "Obfuscate", def: "To render obscure, unclear, or unintelligible.", score: 0 },
+                { word: "Ephemeral", def: "Lasting for a very short time; fleeting.", score: 0 },
+                { word: "Cacophony", def: "A harsh, discordant mixture of sounds.", score: 0 },
+                { word: "Esoteric", def: "Intended for or understood by only a small, specialized number of people.", score: 0 }
             ];
-            
             vocabList = [...vocabList, ...starterWords];
-            localStorage.setItem('vocabList', JSON.stringify(vocabList));
+            saveData();
             localStorage.setItem('starterPackLoaded', 'true');
         }
 
         // --- Core Functions ---
+        function saveData() {
+            localStorage.setItem('vocabList', JSON.stringify(vocabList));
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle');
+            body.classList.toggle('dark-mode');
+            
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+                btn.innerText = '☀️';
+            } else {
+                localStorage.setItem('theme', 'light');
+                btn.innerText = '🌙';
+            }
+        }
+
         function addWord() {
             const word = document.getElementById('wordInput').value.trim();
             const def = document.getElementById('defInput').value.trim();
-
             if (!word || !def) return;
 
-            vocabList.push({ word, def });
-            localStorage.setItem('vocabList', JSON.stringify(vocabList));
+            vocabList.push({ word, def, score: 0 });
+            saveData();
 
             document.getElementById('wordInput').value = '';
             document.getElementById('defInput').value = '';
@@ -247,29 +286,71 @@
         function renderList() {
             const listEl = document.getElementById('vocabList');
             listEl.innerHTML = '';
-            vocabList.forEach(item => {
+            // Sort list by weakest words first
+            const sortedList = [...vocabList].sort((a, b) => a.score - b.score);
+            
+            sortedList.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'vocab-card';
                 card.innerHTML = `
-                    <div class="vocab-word">${escapeHtml(item.word)}</div>
+                    <div class="vocab-word-row">
+                        <span class="vocab-word">${escapeHtml(item.word)}</span>
+                        <span class="vocab-score">Mastery: ${item.score}</span>
+                    </div>
                     <div class="vocab-def">${escapeHtml(item.def)}</div>
                 `;
                 listEl.appendChild(card);
             });
         }
 
-        // --- Flashcard Quiz Functions ---
+        // --- New Features (Study Mode) ---
+        function pronounceWord() {
+            if (vocabList.length === 0) return;
+            const currentWord = vocabList[currentCardIndex].word;
+            const utterance = new SpeechSynthesisUtterance(currentWord);
+            speechSynthesis.speak(utterance);
+        }
+
+        function shuffleCards() {
+            // Fisher-Yates shuffle to mix the deck
+            for (let i = vocabList.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [vocabList[i], vocabList[j]] = [vocabList[j], vocabList[i]];
+            }
+            saveData();
+            currentCardIndex = 0;
+            isFlipped = false;
+            renderQuiz();
+        }
+
+        function scoreWord(points) {
+            if (vocabList.length === 0) return;
+            // Add or subtract from the mastery score
+            vocabList[currentCardIndex].score += points;
+            saveData();
+            
+            // Move to next card
+            currentCardIndex = (currentCardIndex + 1) % vocabList.length;
+            isFlipped = false;
+            renderQuiz();
+            renderList(); // Update scores on the list tab
+        }
+
+        // --- Navigation ---
         function switchTab(tab) {
             document.getElementById('tab-list').classList.toggle('active', tab === 'list');
             document.getElementById('tab-quiz').classList.toggle('active', tab === 'quiz');
-
             document.getElementById('view-list').classList.toggle('hidden', tab === 'quiz');
             document.getElementById('view-quiz').classList.toggle('hidden', tab === 'list');
 
             if (tab === 'quiz') {
+                // Before starting quiz, sort array so weakest words (lowest score) appear first
+                vocabList.sort((a, b) => a.score - b.score);
                 currentCardIndex = 0;
                 isFlipped = false;
                 renderQuiz();
+            } else {
+                renderList();
             }
         }
 
@@ -280,7 +361,7 @@
             if (vocabList.length === 0) {
                 cardEl.innerHTML = `<div style="font-size:20px; font-weight:normal;">Add some words first!</div>`;
                 cardEl.className = 'flashcard flipped';
-                progressEl.innerText = "0 / 0";
+                progressEl.innerText = "";
                 return;
             }
 
@@ -297,7 +378,7 @@
                 cardEl.className = 'flashcard';
             }
 
-            progressEl.innerText = `${currentCardIndex + 1} / ${vocabList.length}`;
+            progressEl.innerText = `Card ${currentCardIndex + 1} of ${vocabList.length} • Current Mastery Score: ${currentVocab.score}`;
         }
 
         function flipCard() {
@@ -306,33 +387,14 @@
             renderQuiz();
         }
 
-        function nextCard() {
-            if (vocabList.length === 0) return;
-            currentCardIndex = (currentCardIndex + 1) % vocabList.length;
-            isFlipped = false;
-            renderQuiz();
-        }
-
-        function prevCard() {
-            if (vocabList.length === 0) return;
-            currentCardIndex = (currentCardIndex - 1 + vocabList.length) % vocabList.length;
-            isFlipped = false;
-            renderQuiz();
-        }
-
-        // --- Utilities ---
         function escapeHtml(text) {
             return text.replace(/[&<>"']/g, function(m) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
             });
         }
 
-        // Initial setup
         renderList();
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     </script>
 </body>
 </html>
