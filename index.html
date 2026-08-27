@@ -19,6 +19,7 @@
             --danger: #ff3b30;
         }
 
+        /* Dark Mode Variables */
         body.dark-mode {
             --bg-color: #000000;
             --card-bg: #1c1c1e;
@@ -35,7 +36,6 @@
             display: flex;
             justify-content: center;
             transition: background-color 0.3s, color 0.3s;
-            overflow-x: hidden;
         }
 
         .container {
@@ -64,14 +64,17 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
+        /* Tab Navigation */
         .tab-bar {
             display: flex;
             background: var(--card-bg);
             padding: 4px;
             border-radius: 8px;
             margin-bottom: 20px;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
         }
 
         .tab {
@@ -84,13 +87,19 @@
             color: var(--subtext-color);
         }
 
-        .tab.active { background: var(--primary); color: white; }
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
         .hidden { display: none !important; }
 
+        /* Form & List Styles */
         .form-card, .vocab-card {
             background: var(--card-bg);
             padding: 16px;
             border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             margin-bottom: 16px;
         }
 
@@ -123,17 +132,19 @@
         .btn-secondary { background-color: var(--card-bg); color: var(--text-color); border: 1px solid #d1d1d6; }
 
         .vocab-list { display: flex; flex-direction: column; gap: 10px; }
-        .vocab-word-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+        
+        .vocab-word-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+        
         .vocab-word { font-size: 18px; font-weight: bold; }
         .vocab-score { font-size: 12px; color: var(--primary); font-weight: bold; background: rgba(0,122,255,0.1); padding: 2px 8px; border-radius: 12px; }
         .vocab-def { font-size: 14px; color: var(--subtext-color); }
 
-        /* Flashcard Swipe Styles */
-        #card-container {
-            position: relative;
-            perspective: 1000px;
-        }
-
+        /* Flashcard Styles */
         .flashcard {
             background: var(--primary);
             color: white;
@@ -147,11 +158,9 @@
             justify-content: center;
             font-size: 28px;
             font-weight: bold;
+            cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,122,255,0.3);
             margin-bottom: 12px;
-            touch-action: pan-y; /* Allows vertical scrolling, captures horizontal swipes */
-            transition: transform 0.2s ease-out; /* Smooth snapping */
-            user-select: none;
         }
 
         .flashcard.flipped {
@@ -178,6 +187,7 @@
 </head>
 <body>
     <div class="container">
+        <!-- Header with Dark Mode Toggle -->
         <div class="header-row">
             <h1>Vocab Builder</h1>
             <button id="themeToggle" class="icon-btn" onclick="toggleTheme()">🌙</button>
@@ -200,17 +210,14 @@
 
         <!-- View 2: Flashcard Quiz -->
         <div id="view-quiz" class="hidden">
-            <div id="card-container">
-                <!-- Removed onclick, replaced with touch gestures in JS -->
-                <div id="flashcard" class="flashcard"></div>
-            </div>
+            <div id="flashcard" class="flashcard" onclick="flipCard()"></div>
             
             <button class="btn-secondary" onclick="pronounceWord()" style="margin-bottom: 20px; padding: 10px;">🔊 Pronounce Aloud</button>
 
             <div class="quiz-controls">
-                <button class="btn-danger" onclick="scoreWord(-1)" style="flex: 1;">&larr; Forgot</button>
+                <button class="btn-danger" onclick="scoreWord(-1)" style="flex: 1;">❌ Forgot</button>
                 <button class="btn-secondary" onclick="shuffleCards()" style="flex: 0.5; font-size: 20px; padding: 12px;">🔀</button>
-                <button class="btn-success" onclick="scoreWord(1)" style="flex: 1;">Knew It &rarr;</button>
+                <button class="btn-success" onclick="scoreWord(1)" style="flex: 1;">✅ Knew It</button>
             </div>
             <div id="quiz-progress" style="text-align: center; margin-top: 16px; color: var(--subtext-color); font-size: 14px;"></div>
         </div>
@@ -221,20 +228,39 @@
         let currentCardIndex = 0;
         let isFlipped = false;
 
+        // Apply saved theme on load
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-mode');
             document.getElementById('themeToggle').innerText = '☀️';
         }
 
+        // Add 'score' tracking to old words if it doesn't exist
         vocabList.forEach(w => { if(w.score === undefined) w.score = 0; });
 
-        // Core Functions
-        function saveData() { localStorage.setItem('vocabList', JSON.stringify(vocabList)); }
+        // Starter Pack
+        if (!localStorage.getItem('starterPackLoaded')) {
+            const starterWords = [
+                { word: "Sycophant", def: "A person who acts excessively obedient toward someone important to gain advantage.", score: 0 },
+                { word: "Obfuscate", def: "To render obscure, unclear, or unintelligible.", score: 0 },
+                { word: "Ephemeral", def: "Lasting for a very short time; fleeting.", score: 0 },
+                { word: "Cacophony", def: "A harsh, discordant mixture of sounds.", score: 0 },
+                { word: "Esoteric", def: "Intended for or understood by only a small, specialized number of people.", score: 0 }
+            ];
+            vocabList = [...vocabList, ...starterWords];
+            saveData();
+            localStorage.setItem('starterPackLoaded', 'true');
+        }
+
+        // --- Core Functions ---
+        function saveData() {
+            localStorage.setItem('vocabList', JSON.stringify(vocabList));
+        }
 
         function toggleTheme() {
             const body = document.body;
             const btn = document.getElementById('themeToggle');
             body.classList.toggle('dark-mode');
+            
             if (body.classList.contains('dark-mode')) {
                 localStorage.setItem('theme', 'dark');
                 btn.innerText = '☀️';
@@ -248,8 +274,10 @@
             const word = document.getElementById('wordInput').value.trim();
             const def = document.getElementById('defInput').value.trim();
             if (!word || !def) return;
+
             vocabList.push({ word, def, score: 0 });
             saveData();
+
             document.getElementById('wordInput').value = '';
             document.getElementById('defInput').value = '';
             renderList();
@@ -258,7 +286,9 @@
         function renderList() {
             const listEl = document.getElementById('vocabList');
             listEl.innerHTML = '';
+            // Sort list by weakest words first
             const sortedList = [...vocabList].sort((a, b) => a.score - b.score);
+            
             sortedList.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'vocab-card';
@@ -273,13 +303,16 @@
             });
         }
 
+        // --- New Features (Study Mode) ---
         function pronounceWord() {
             if (vocabList.length === 0) return;
             const currentWord = vocabList[currentCardIndex].word;
-            speechSynthesis.speak(new SpeechSynthesisUtterance(currentWord));
+            const utterance = new SpeechSynthesisUtterance(currentWord);
+            speechSynthesis.speak(utterance);
         }
 
         function shuffleCards() {
+            // Fisher-Yates shuffle to mix the deck
             for (let i = vocabList.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [vocabList[i], vocabList[j]] = [vocabList[j], vocabList[i]];
@@ -292,20 +325,26 @@
 
         function scoreWord(points) {
             if (vocabList.length === 0) return;
+            // Add or subtract from the mastery score
             vocabList[currentCardIndex].score += points;
             saveData();
+            
+            // Move to next card
             currentCardIndex = (currentCardIndex + 1) % vocabList.length;
             isFlipped = false;
             renderQuiz();
-            renderList();
+            renderList(); // Update scores on the list tab
         }
 
+        // --- Navigation ---
         function switchTab(tab) {
             document.getElementById('tab-list').classList.toggle('active', tab === 'list');
             document.getElementById('tab-quiz').classList.toggle('active', tab === 'quiz');
             document.getElementById('view-list').classList.toggle('hidden', tab === 'quiz');
             document.getElementById('view-quiz').classList.toggle('hidden', tab === 'list');
+
             if (tab === 'quiz') {
+                // Before starting quiz, sort array so weakest words (lowest score) appear first
                 vocabList.sort((a, b) => a.score - b.score);
                 currentCardIndex = 0;
                 isFlipped = false;
@@ -318,9 +357,6 @@
         function renderQuiz() {
             const cardEl = document.getElementById('flashcard');
             const progressEl = document.getElementById('quiz-progress');
-            
-            // Reset transforms just in case
-            cardEl.style.transform = 'translateX(0px) rotate(0deg)';
 
             if (vocabList.length === 0) {
                 cardEl.innerHTML = `<div style="font-size:20px; font-weight:normal;">Add some words first!</div>`;
@@ -330,6 +366,7 @@
             }
 
             const currentVocab = vocabList[currentCardIndex];
+            
             if (isFlipped) {
                 cardEl.innerHTML = `
                     <div class="small-word">${escapeHtml(currentVocab.word)} means:</div>
@@ -340,7 +377,14 @@
                 cardEl.innerHTML = escapeHtml(currentVocab.word);
                 cardEl.className = 'flashcard';
             }
+
             progressEl.innerText = `Card ${currentCardIndex + 1} of ${vocabList.length} • Current Mastery Score: ${currentVocab.score}`;
+        }
+
+        function flipCard() {
+            if (vocabList.length === 0) return;
+            isFlipped = !isFlipped;
+            renderQuiz();
         }
 
         function escapeHtml(text) {
@@ -348,53 +392,6 @@
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
             });
         }
-
-        // --- Swipe Gesture Logic ---
-        const flashcardEl = document.getElementById('flashcard');
-        let startX = 0;
-        let currentX = 0;
-        let isDragging = false;
-
-        // For touch devices (iPhone)
-        flashcardEl.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            isDragging = true;
-            flashcardEl.style.transition = 'none'; // Remove snap transition while dragging
-        });
-
-        flashcardEl.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            currentX = e.touches[0].clientX;
-            const deltaX = currentX - startX;
-            // Move the card visually and rotate it slightly
-            flashcardEl.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.05}deg)`;
-        });
-
-        flashcardEl.addEventListener('touchend', (e) => {
-            if (!isDragging) return;
-            isDragging = false;
-            const deltaX = currentX - startX;
-            
-            flashcardEl.style.transition = 'transform 0.2s ease-out'; // Bring back snap transition
-            
-            if (Math.abs(deltaX) > 80) { // If swiped more than 80 pixels
-                if (deltaX > 0) {
-                    scoreWord(1); // Swipe Right
-                } else {
-                    scoreWord(-1); // Swipe Left
-                }
-            } else {
-                // If it was just a tap (or very tiny drag), snap back and flip
-                flashcardEl.style.transform = 'translateX(0px) rotate(0deg)';
-                if (Math.abs(deltaX) < 10) {
-                    if (vocabList.length > 0) {
-                        isFlipped = !isFlipped;
-                        renderQuiz();
-                    }
-                }
-            }
-            startX = 0; currentX = 0;
-        });
 
         renderList();
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
