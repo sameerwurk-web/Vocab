@@ -165,4 +165,225 @@
                 { word: "Obfuscate", def: "To render obscure, unclear, or unintelligible.", score: 0 },
                 { word: "Ephemeral", def: "Lasting for a very short time; fleeting.", score: 0 },
                 { word: "Cacophony", def: "A harsh, discordant mixture of sounds.", score: 0 },
-                { word: "Esoteric", def: "Intended for or understood by only a small
+                { word: "Esoteric", def: "Intended for or understood by only a small, specialized number of people.", score: 0 }
+            ];
+            localStorage.setItem('vocabList', JSON.stringify(vocabList));
+        }
+
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('themeToggle').innerText = '☀️';
+        }
+
+        vocabList.forEach(w => { if(w.score === undefined) w.score = 0; });
+
+        function saveData() { localStorage.setItem('vocabList', JSON.stringify(vocabList)); }
+
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle');
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+                btn.innerText = '☀️';
+            } else {
+                localStorage.setItem('theme', 'light');
+                btn.innerText = '🌙';
+            }
+        }
+
+        function addWord() {
+            const word = document.getElementById('wordInput').value.trim();
+            const def = document.getElementById('defInput').value.trim();
+            if (!word || !def) return;
+            vocabList.push({ word, def, score: 0 });
+            saveData();
+            document.getElementById('wordInput').value = '';
+            document.getElementById('defInput').value = '';
+            renderList();
+        }
+
+        function getCardColor(score) {
+            if (score < 0) return '#ff3b30'; 
+            if (score >= 0 && score <= 2) return '#007aff'; 
+            if (score >= 3 && score <= 4) return '#af52de'; 
+            return '#e6b800'; 
+        }
+
+        function renderList() {
+            const listEl = document.getElementById('vocabList');
+            listEl.innerHTML = '';
+            const sortedList = [...vocabList].sort((a, b) => a.score - b.score);
+            sortedList.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'vocab-card';
+                card.innerHTML = `
+                    <div class="vocab-word-row">
+                        <span class="vocab-word">${escapeHtml(item.word)}</span>
+                        <span class="vocab-score" style="color: ${getCardColor(item.score)};">Mastery: ${item.score}</span>
+                    </div>
+                    <div class="vocab-def">${escapeHtml(item.def)}</div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function pronounceWord() {
+            if (vocabList.length === 0) return;
+            speechSynthesis.speak(new SpeechSynthesisUtterance(vocabList[currentCardIndex].word));
+        }
+
+        function shuffleCards() {
+            for (let i = vocabList.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [vocabList[i], vocabList[j]] = [vocabList[j], vocabList[i]];
+            }
+            saveData();
+            currentCardIndex = 0;
+            isFlipped = false;
+            renderQuiz();
+        }
+
+        function startSpeedRun() {
+            if (vocabList.length === 0) return;
+            isSpeedRunMode = true;
+            timeLeft = 30;
+            speedRunScore = 0;
+            document.getElementById('speed-run-timer').classList.remove('hidden');
+            document.getElementById('speed-run-timer').innerText = `⏱️ ${timeLeft}s`;
+            document.getElementById('extra-actions').classList.add('hidden');
+            shuffleCards();
+            
+            speedRunInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('speed-run-timer').innerText = `⏱️ ${timeLeft}s`;
+                if (timeLeft <= 0) endSpeedRun();
+            }, 1000);
+        }
+
+        function endSpeedRun() {
+            clearInterval(speedRunInterval);
+            isSpeedRunMode = false;
+            document.getElementById('speed-run-timer').classList.add('hidden');
+            document.getElementById('extra-actions').classList.remove('hidden');
+            confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
+            setTimeout(() => {
+                alert(`Time's up! Speed Run Score: ${speedRunScore} correct swipes!`);
+                renderQuiz();
+            }, 500);
+        }
+
+        function scoreWord(points) {
+            if (vocabList.length === 0) return;
+            vocabList[currentCardIndex].score += points;
+            if (isSpeedRunMode && points > 0) speedRunScore++;
+            if (points > 0 && vocabList[currentCardIndex].score === 5 && !isSpeedRunMode) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+            saveData();
+            currentCardIndex = (currentCardIndex + 1) % vocabList.length;
+            isFlipped = false;
+            renderQuiz();
+            renderList();
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tab-list').classList.toggle('active', tab === 'list');
+            document.getElementById('tab-quiz').classList.toggle('active', tab === 'quiz');
+            document.getElementById('view-list').classList.toggle('hidden', tab === 'quiz');
+            document.getElementById('view-quiz').classList.toggle('hidden', tab === 'list');
+            if (isSpeedRunMode) endSpeedRun();
+            if (tab === 'quiz') {
+                vocabList.sort((a, b) => a.score - b.score);
+                currentCardIndex = 0;
+                isFlipped = false;
+                renderQuiz();
+            } else {
+                renderList();
+            }
+        }
+
+        function renderQuiz() {
+            const cardEl = document.getElementById('flashcard');
+            const progressEl = document.getElementById('quiz-progress');
+            cardEl.style.transform = 'translateX(0px) rotate(0deg)';
+            
+            if (vocabList.length === 0) {
+                cardEl.innerHTML = `<div style="font-size:20px; font-weight:normal;">Add some words first!</div>`;
+                cardEl.className = 'flashcard flipped';
+                progressEl.innerText = "";
+                return;
+            }
+
+            const currentVocab = vocabList[currentCardIndex];
+            const dynamicColor = getCardColor(currentVocab.score);
+
+            if (isFlipped) {
+                cardEl.innerHTML = `
+                    <div class="small-word">${escapeHtml(currentVocab.word)} means:</div>
+                    <div style="font-size: 22px;">${escapeHtml(currentVocab.def)}</div>
+                `;
+                cardEl.className = 'flashcard flipped';
+                cardEl.style.borderColor = dynamicColor;
+            } else {
+                cardEl.innerHTML = escapeHtml(currentVocab.word);
+                cardEl.className = 'flashcard';
+                cardEl.style.backgroundColor = dynamicColor;
+                cardEl.style.borderColor = 'transparent';
+            }
+            
+            if (isSpeedRunMode) {
+                progressEl.innerText = `Fast! Correct so far: ${speedRunScore}`;
+            } else {
+                progressEl.innerText = `Card ${currentCardIndex + 1} of ${vocabList.length} • Mastery Score: ${currentVocab.score}`;
+            }
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        const flashcardEl = document.getElementById('flashcard');
+        let startX = 0; let currentX = 0; let isDragging = false;
+
+        flashcardEl.addEventListener('touchstart', (e) => {
+            if (vocabList.length === 0) return;
+            startX = e.touches[0].clientX;
+            currentX = startX;
+            isDragging = true;
+            flashcardEl.style.transition = 'none'; 
+        });
+
+        flashcardEl.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentX = e.touches[0].clientX;
+            const deltaX = currentX - startX;
+            flashcardEl.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.05}deg)`;
+        });
+
+        flashcardEl.addEventListener('touchend', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            const deltaX = currentX - startX;
+            flashcardEl.style.transition = 'transform 0.2s ease-out, background 0.3s, border-color 0.3s';
+            
+            if (Math.abs(deltaX) > 80) { 
+                if (deltaX > 0) scoreWord(1);
+                else scoreWord(-1);
+            } else {
+                flashcardEl.style.transform = 'translateX(0px) rotate(0deg)';
+                if (Math.abs(deltaX) < 10) { 
+                    isFlipped = !isFlipped;
+                    renderQuiz();
+                }
+            }
+            startX = 0; currentX = 0;
+        });
+
+        renderList();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+    </script>
+</body>
+</html>
